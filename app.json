@@ -6,7 +6,7 @@
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "kalastajapro",
-    "userInterfaceStyle": "automatic",
+    "userInterfaceStyle": "light",
     "ios": {
       "supportsTablet": true
     },
@@ -32,6 +32,24 @@
           "image": "./assets/images/splash-icon.png",
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
+        }
+      ],
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "Salli KalastajaPro-sovelluksen käyttää sijaintiasi sään ja kartan näyttämiseen."
+        }
+      ],
+      "expo-font",
+      "expo-status-bar",
+      "expo-web-browser",
+      "expo-sqlite",
+      [
+        "expo-image-picker",
+        {
+          "photosPermission": "Salli KalastajaPro-sovelluksen käyttää kuvia saalispäiväkirjaa varten.",
+          "cameraPermission": false,
+          "microphonePermission": false
         }
       ]
     ],
