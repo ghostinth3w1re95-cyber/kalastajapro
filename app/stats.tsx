@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 
 import { Text } from '@/components/Themed';
 import { getCatchRecords, type CatchRecord } from '@/database/database';
+import { createCatchSummary } from '@/services/catchStatistics';
 
 const colors = {
   page: '#071a2a',
@@ -45,24 +46,7 @@ export default function StatsScreen() {
   }, []);
 
   const summary = useMemo(() => {
-    const totalWeight = records.reduce((total, record) => total + record.weight, 0);
-    const heaviestCatch = records.reduce<CatchRecord | null>(
-      (heaviest, record) => (!heaviest || record.weight > heaviest.weight ? record : heaviest),
-      null
-    );
-    const speciesCounts = countBy(records, (record) => record.species);
-    const locationCounts = countBy(records, (record) => record.location);
-    const mostCommonSpecies = getMostCommon(speciesCounts);
-
-    return {
-      totalWeight,
-      averageWeight: records.length > 0 ? totalWeight / records.length : 0,
-      heaviestCatch,
-      latestCatch: records[0] ?? null,
-      speciesCounts,
-      locationCounts,
-      mostCommonSpecies,
-    };
+    return createCatchSummary(records);
   }, [records]);
 
   return (
@@ -157,22 +141,6 @@ function StatCard({ label, value }: { label: string; value: string }) {
 
 function formatWeight(weight: number) {
   return Number.isInteger(weight) ? `${weight}` : weight.toFixed(1);
-}
-
-function countBy(records: CatchRecord[], getKey: (record: CatchRecord) => string) {
-  return records.reduce<Record<string, number>>((counts, record) => {
-    const key = getKey(record).trim() || 'Ei määritetty';
-    counts[key] = (counts[key] ?? 0) + 1;
-    return counts;
-  }, {});
-}
-
-function getMostCommon(counts: Record<string, number>) {
-  return Object.entries(counts).reduce<{ name: string; count: number } | null>(
-    (mostCommon, [name, count]) =>
-      !mostCommon || count > mostCommon.count ? { name, count } : mostCommon,
-    null
-  );
 }
 
 function CountSection({ title, counts }: { title: string; counts: Record<string, number> }) {
