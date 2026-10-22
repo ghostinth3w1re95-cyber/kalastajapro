@@ -345,6 +345,14 @@ export default function JournalScreen() {
           </Pressable>
         ) : null}
       </View>
+      <Pressable style={styles.infoCard} onPress={() => router.push('../privacy')}>
+        <Text style={styles.infoIcon}>ⓘ</Text>
+        <View style={styles.infoText}>
+          <Text style={styles.infoTitle}>Tietoa ja tietosuoja</Text>
+          <Text style={styles.infoSubtitle}>Miten sijaintia, kuvia ja tietoja käytetään</Text>
+        </View>
+        <Text style={styles.chevron}>›</Text>
+      </Pressable>
     </ScrollView>
   );
 }
@@ -689,5 +697,34 @@ const styles = StyleSheet.create({
     color: colors.muted,
     fontSize: 14,
     fontWeight: '700',
+  },
+  infoCard: {
+    alignItems: 'center',
+    backgroundColor: colors.card,
+    borderColor: colors.border,
+    borderRadius: 14,
+    borderWidth: 1,
+    flexDirection: 'row',
+    marginTop: 14,
+    padding: 14,
+  },
+  infoIcon: {
+    color: colors.blue,
+    fontSize: 24,
+  },
+  infoText: {
+    backgroundColor: 'transparent',
+    flex: 1,
+    marginLeft: 10,
+  },
+  infoTitle: {
+    color: colors.navy,
+    fontSize: 15,
+    fontWeight: '800',
+  },
+  infoSubtitle: {
+    color: colors.muted,
+    fontSize: 12,
+    marginTop: 3,
   },
 });
