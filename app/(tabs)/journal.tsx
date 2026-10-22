@@ -22,6 +22,10 @@ import {
   type CatchRecord,
   type FishingSpot,
 } from '@/database/database';
+import {
+  validateCatchInput,
+  type CatchValidationErrors,
+} from '@/services/catchValidation';
 
 const colors = {
   page: '#071a2a',
@@ -47,6 +51,7 @@ export default function JournalScreen() {
   const [editingId, setEditingId] = useState<number | null>(null);
   const [selectedSpotId, setSelectedSpotId] = useState<number | null>(null);
   const [isSaving, setIsSaving] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<CatchValidationErrors>({});
 
   async function loadRecords() {
     try {
@@ -105,14 +110,16 @@ export default function JournalScreen() {
   }
 
   async function saveRecord() {
-    const numericWeight = Number(weight.replace(',', '.'));
-    if (!species.trim() || !Number.isFinite(numericWeight) || numericWeight <= 0 || !date) {
-      Alert.alert('Tarkista tiedot', 'Anna laji, positiivinen paino ja päivämäärä.');
+    const errors = validateCatchInput({ species, weight, date, location });
+    setValidationErrors(errors);
+    if (Object.keys(errors).length > 0) {
       return;
     }
+    const numericWeight = Number(weight.replace(',', '.'));
 
     setIsSaving(true);
     try {
+      const wasEditing = editingId !== null;
       const storedImageUri =
         imageChanged && imageUri ? await copyImageToAppStorage(imageUri) : imageUri;
       const normalizedLocation = location.trim() || 'Ei määritetty';
@@ -136,6 +143,12 @@ export default function JournalScreen() {
       }
       resetForm();
       await loadRecords();
+      Alert.alert(
+        wasEditing ? 'Saalis päivitetty' : 'Saalis tallennettu',
+        wasEditing
+          ? 'Saalin muutokset tallennettiin.'
+          : 'Uusi saalis lisättiin päiväkirjaan.'
+      );
     } catch {
       Alert.alert('Tallennusvirhe', 'Saalista tai kuvaa ei voitu tallentaa.');
     } finally {
@@ -152,6 +165,7 @@ export default function JournalScreen() {
     setImageChanged(false);
     setEditingId(null);
     setSelectedSpotId(null);
+    setValidationErrors({});
   }
 
   function startEditing(record: CatchRecord) {
@@ -234,6 +248,9 @@ export default function JournalScreen() {
           onChangeText={setSpecies}
           style={styles.input}
         />
+        {validationErrors.species ? (
+          <Text style={styles.fieldError}>{validationErrors.species}</Text>
+        ) : null}
         <RNView style={styles.row}>
           <TextInput
             placeholder="Paino (g)"
@@ -243,6 +260,9 @@ export default function JournalScreen() {
             keyboardType="decimal-pad"
             style={[styles.input, styles.halfInput]}
           />
+          {validationErrors.weight ? (
+            <Text style={styles.fieldError}>{validationErrors.weight}</Text>
+          ) : null}
           <TextInput
             placeholder="VVVV-KK-PP"
             placeholderTextColor={colors.muted}
@@ -251,6 +271,9 @@ export default function JournalScreen() {
             style={[styles.input, styles.halfInput]}
           />
         </RNView>
+        {validationErrors.date ? (
+          <Text style={styles.fieldError}>{validationErrors.date}</Text>
+        ) : null}
         <TextInput
           placeholder="Kalastuspaikka (valinnainen)"
           placeholderTextColor={colors.muted}
@@ -261,6 +284,9 @@ export default function JournalScreen() {
           }}
           style={styles.input}
         />
+        {validationErrors.location ? (
+          <Text style={styles.fieldError}>{validationErrors.location}</Text>
+        ) : null}
         {spots.length > 0 ? (
           <View style={styles.spotSelector}>
             <Text style={styles.spotSelectorTitle}>Valitse tallennettu paikka</Text>
@@ -551,6 +577,11 @@ const styles = StyleSheet.create({
     color: colors.navy,
     marginTop: 10,
     padding: 12,
+  },
+  fieldError: {
+    color: colors.red,
+    fontSize: 12,
+    marginTop: 4,
   },
   spotSelector: {
     backgroundColor: 'transparent',
