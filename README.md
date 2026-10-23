@@ -44,6 +44,17 @@ npm install
 npx expo start -c
 ```
 
+Web-testausta varten:
+
+```powershell
+npm run web
+```
+
+Selain käyttää saaliille ja kalastuspaikoille `localStorage`-tallennusta, koska
+`expo-sqlite`-web-tuki on rajoitettu. Mobiilissa käytetään edelleen Expo SQLitea.
+Selainversiossa karttanäkymä näyttää tallennetut paikat listana; varsinainen kartta
+testataan Expo Go -sovelluksessa tai Android-emulaattorissa.
+
 Skannaa terminaalissa näkyvä QR-koodi Expo Go -sovelluksella. Jos lähiverkkoyhteys
 ei toimi, kokeile tunnel-yhteyttä:
 
