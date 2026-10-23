@@ -34,7 +34,7 @@ pitää kuvallista saalispäiväkirjaa.
 Siirry projektikansioon ja asenna riippuvuudet:
 
 ```powershell
-cd C:\Users\Ghost\Desktop\Mobiiliohjelmointi\kalastajapro
+cd <projektikansio>
 npm install
 ```
 
@@ -188,6 +188,8 @@ Suositeltu esittelyjärjestys:
 7. Avaa omat tilastot.
 8. Avaa tietosuoja-näkymä.
 9. Käynnistä sovellus uudelleen ja osoita, että tiedot säilyvät.
+
+Yllä mainitut asiat ovat minun muistiinpanot
 
 ## Tunnetut rajoitukset
 
