@@ -34,6 +34,7 @@ pitää kuvallista saalispäiväkirjaa.
 Siirry projektikansioon ja asenna riippuvuudet:
 
 ```powershell
+cd <projektikansio>
 npm install
 ```
 
