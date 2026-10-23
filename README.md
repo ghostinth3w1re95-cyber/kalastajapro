@@ -34,7 +34,6 @@ pitää kuvallista saalispäiväkirjaa.
 Siirry projektikansioon ja asenna riippuvuudet:
 
 ```powershell
-cd C:\Users\Ghost\Desktop\Mobiiliohjelmointi\kalastajapro
 npm install
 ```
 
