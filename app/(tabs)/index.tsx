@@ -6,7 +6,7 @@ import Svg, { Line, Polyline } from 'react-native-svg';
 import { Text, View } from '@/components/Themed';
 import {
   calculateFeedingIndex,
-  fetchWeather,
+  fetchWeatherWithCache,
   getWeatherDescription,
   getWindDirection,
   type PressurePoint,
@@ -53,7 +53,17 @@ export default function TabOneScreen() {
         setLocationNotice('Sijaintilupaa ei myönnetty. Sää näytetään Helsingin oletussijainnista.');
       }
 
-      setWeather(await fetchWeather(coordinates.latitude, coordinates.longitude, coordinates.name));
+      const result = await fetchWeatherWithCache(
+        coordinates.latitude,
+        coordinates.longitude,
+        coordinates.name
+      );
+      setWeather(result.weather);
+      setLocationNotice(
+        result.isCached
+          ? 'Verkkoyhteyttä ei ole. Näytetään viimeisin tallennettu säädata.'
+          : `${coordinates.name}: sää päivitetty ${new Date(result.weather.fetchedAt).toLocaleTimeString('fi-FI', { hour: '2-digit', minute: '2-digit' })}.`
+      );
     } catch (requestError) {
       const message = requestError instanceof Error ? requestError.message : 'Säätietojen haku epäonnistui.';
       setError(`${message} Tarkista verkkoyhteys ja yritä uudelleen.`);
@@ -93,6 +103,14 @@ export default function TabOneScreen() {
             <Text style={styles.indexLabel}>{calculateFeedingIndex(weather).label}</Text>
             <View style={styles.progressTrack}><View style={[styles.progress, { width: `${calculateFeedingIndex(weather).score}%` }]} /></View>
             <Text style={styles.cardHint}>{calculateFeedingIndex(weather).explanation} Indeksi on suuntaa-antava, ei saalistakuu.</Text>
+            {calculateFeedingIndex(weather).factors.map((factor) => (
+              <View key={factor.label} style={styles.factorRow}>
+                <Text style={styles.factorLabel}>{factor.label}</Text>
+                <Text style={[styles.factorPoints, factor.points < 0 && styles.negativePoints]}>
+                  {factor.points > 0 ? '+' : ''}{factor.points}
+                </Text>
+              </View>
+            ))}
           </View>
           <View style={styles.metrics}>
             <Metric label="Ilmanpaine" value={`${weather.pressure.toFixed(0)} hPa`} />
@@ -100,11 +118,37 @@ export default function TabOneScreen() {
             <Metric label="Suunta" value={getWindDirection(weather.windDirection)} />
           </View>
           <PressureChart points={weather.pressureHistory} />
+          <ForecastCard weather={weather} />
           <ActionButton label="Päivitä säätiedot" onPress={() => void loadWeather()} />
         </>
       ) : null}
     </ScrollView>
   );
+}
+
+function ForecastCard({ weather }: { weather: WeatherData }) {
+  return (
+    <View style={styles.forecastCard}>
+      <Text style={styles.cardTitle}>Seuraavat tunnit</Text>
+      <Text style={styles.sunText}>
+        Aurinko: {formatTime(weather.sunrise)}–{formatTime(weather.sunset)}
+      </Text>
+      <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.forecastScroll}>
+        {weather.forecast.map((point) => (
+          <View key={point.time} style={styles.forecastItem}>
+            <Text style={styles.forecastTime}>{formatTime(point.time)}</Text>
+            <Text style={styles.forecastTemperature}>{point.temperature.toFixed(0)}°</Text>
+            <Text style={styles.forecastRain}>{point.precipitation.toFixed(1)} mm</Text>
+            <Text style={styles.forecastWind}>{(point.windSpeed / 3.6).toFixed(1)} m/s</Text>
+          </View>
+        ))}
+      </ScrollView>
+    </View>
+  );
+}
+
+function formatTime(value: string | null) {
+  return value ? value.slice(11, 16) : '-';
 }
 
 function Metric({ label, value }: { label: string; value: string }) {
@@ -149,6 +193,10 @@ const styles = StyleSheet.create({
   progressTrack: { backgroundColor: colors.line, borderRadius: 8, height: 8, marginTop: 12, overflow: 'hidden' },
   progress: { backgroundColor: colors.cyan, borderRadius: 8, height: 8 },
   cardHint: { color: colors.muted, fontSize: 13, lineHeight: 19, marginTop: 10 },
+  factorRow: { alignItems: 'center', backgroundColor: 'transparent', flexDirection: 'row', justifyContent: 'space-between', marginTop: 8 },
+  factorLabel: { color: colors.muted, fontSize: 12 },
+  factorPoints: { color: colors.cyan, fontSize: 12, fontWeight: '800' },
+  negativePoints: { color: '#ff9b91' },
   metrics: { backgroundColor: 'transparent', flexDirection: 'row', gap: 8, marginTop: 12 },
   metric: { backgroundColor: colors.panel, borderRadius: 13, flex: 1, padding: 12 },
   metricLabel: { color: colors.muted, fontSize: 11 },
@@ -157,6 +205,14 @@ const styles = StyleSheet.create({
   chartTrend: { color: colors.cyan, fontSize: 14, marginTop: 4 },
   chartLabels: { backgroundColor: 'transparent', flexDirection: 'row', justifyContent: 'space-between' },
   chartLabel: { color: colors.muted, fontSize: 12 },
+  forecastCard: { backgroundColor: colors.panel, borderRadius: 16, marginTop: 12, padding: 15 },
+  sunText: { color: colors.muted, fontSize: 12, marginTop: 5 },
+  forecastScroll: { marginTop: 10 },
+  forecastItem: { backgroundColor: colors.panelLight, borderRadius: 10, marginRight: 8, minWidth: 72, padding: 8 },
+  forecastTime: { color: colors.muted, fontSize: 11 },
+  forecastTemperature: { color: colors.white, fontSize: 18, fontWeight: '800', marginTop: 4 },
+  forecastRain: { color: colors.cyan, fontSize: 11, marginTop: 4 },
+  forecastWind: { color: colors.muted, fontSize: 11, marginTop: 3 },
   feedback: { alignItems: 'center', backgroundColor: 'transparent', gap: 14, marginTop: 50, padding: 20 },
   error: { color: '#ff9b91', textAlign: 'center' },
   button: { alignItems: 'center', backgroundColor: colors.cyan, borderRadius: 12, marginTop: 16, padding: 14, width: '100%' },

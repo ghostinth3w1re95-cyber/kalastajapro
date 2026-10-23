@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { ActivityIndicator, ScrollView, StyleSheet, View } from 'react-native';
 import { Stack } from 'expo-router';
+import Svg, { Rect } from 'react-native-svg';
 
 import { Text } from '@/components/Themed';
 import { getCatchRecords, type CatchRecord } from '@/database/database';
@@ -123,10 +124,48 @@ export default function StatsScreen() {
             </View>
             <CountSection title="Saalit lajeittain" counts={summary.speciesCounts} />
             <CountSection title="Saalit paikoittain" counts={summary.locationCounts} />
+            <BarChart title="Lajijakauma" counts={summary.speciesCounts} />
           </>
         )}
       </ScrollView>
     </>
+  );
+}
+
+function BarChart({ title, counts }: { title: string; counts: Record<string, number> }) {
+  const entries = Object.entries(counts).sort(([, first], [, second]) => second - first).slice(0, 6);
+  const max = Math.max(...entries.map(([, count]) => count), 1);
+  const width = 320;
+  const barHeight = 22;
+  const gap = 12;
+
+  return (
+    <View style={styles.detailsCard}>
+      <Text style={styles.cardTitle}>{title}</Text>
+      {entries.length === 0 ? (
+        <Text style={styles.detailText}>Tietoja ei ole vielä.</Text>
+      ) : (
+        <Svg height={entries.length * (barHeight + gap)} width="100%" viewBox={`0 0 ${width} ${entries.length * (barHeight + gap)}`}>
+          {entries.map(([name, count], index) => (
+            <Rect
+              key={name}
+              fill={colors.accent}
+              height={barHeight}
+              rx={5}
+              width={(count / max) * (width - 16)}
+              x={0}
+              y={index * (barHeight + gap)}
+            />
+          ))}
+        </Svg>
+      )}
+      {entries.map(([name, count]) => (
+        <View key={`${name}-label`} style={styles.countRow}>
+          <Text style={styles.detailLabel}>{name}</Text>
+          <Text style={styles.countValue}>{count}</Text>
+        </View>
+      ))}
+    </View>
   );
 }
 

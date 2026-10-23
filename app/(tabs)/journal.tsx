@@ -129,7 +129,9 @@ export default function JournalScreen() {
           numericWeight,
           date,
           normalizedLocation,
-          storedImageUri
+          storedImageUri,
+          spots.find((spot) => spot.id === selectedSpotId)?.latitude ?? null,
+          spots.find((spot) => spot.id === selectedSpotId)?.longitude ?? null
         );
       } else {
         await updateCatchRecord(
@@ -138,7 +140,9 @@ export default function JournalScreen() {
           numericWeight,
           date,
           normalizedLocation,
-          storedImageUri
+          storedImageUri,
+          spots.find((spot) => spot.id === selectedSpotId)?.latitude ?? null,
+          spots.find((spot) => spot.id === selectedSpotId)?.longitude ?? null
         );
       }
       resetForm();
@@ -366,6 +370,8 @@ function CatchCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const router = useRouter();
+
   return (
     <View style={styles.catchCard}>
       {record.imageUri ? (
@@ -388,6 +394,22 @@ function CatchCard({
         <Pressable onPress={onEdit} style={styles.editButton}>
           <Text style={styles.editButtonText}>Muokkaa</Text>
         </Pressable>
+        {record.latitude !== null && record.longitude !== null ? (
+          <Pressable
+            onPress={() =>
+              router.push({
+                pathname: '/two',
+                params: {
+                  latitude: String(record.latitude),
+                  longitude: String(record.longitude),
+                },
+              })
+            }
+            style={styles.mapButton}
+          >
+            <Text style={styles.mapButtonText}>Näytä kartalla</Text>
+          </Pressable>
+        ) : null}
       </View>
       <Pressable onPress={onDelete} hitSlop={10} style={styles.deleteButton}>
         <Text style={styles.delete}>×</Text>
@@ -528,6 +550,19 @@ const styles = StyleSheet.create({
   },
   editButtonText: {
     color: colors.blue,
+    fontSize: 11,
+    fontWeight: '700',
+  },
+  mapButton: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.blue,
+    borderRadius: 6,
+    marginTop: 6,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+  },
+  mapButtonText: {
+    color: colors.page,
     fontSize: 11,
     fontWeight: '700',
   },

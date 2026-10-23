@@ -2,9 +2,9 @@ import { createCatchSummary } from './catchStatistics';
 import type { CatchRecord } from '@/database/database';
 
 const records: CatchRecord[] = [
-  { id: 1, species: 'Ahven', weight: 500, date: '2026-10-22', location: 'Lahti', imageUri: null },
-  { id: 2, species: 'Ahven', weight: 300, date: '2026-10-20', location: 'Lahti', imageUri: null },
-  { id: 3, species: 'Hauki', weight: 1200, date: '2026-10-18', location: 'Espoo', imageUri: null },
+  { id: 1, species: 'Ahven', weight: 500, date: '2026-10-22', location: 'Lahti', imageUri: null, latitude: null, longitude: null },
+  { id: 2, species: 'Ahven', weight: 300, date: '2026-10-20', location: 'Lahti', imageUri: null, latitude: null, longitude: null },
+  { id: 3, species: 'Hauki', weight: 1200, date: '2026-10-18', location: 'Espoo', imageUri: null, latitude: null, longitude: null },
 ];
 
 describe('catch statistics', () => {

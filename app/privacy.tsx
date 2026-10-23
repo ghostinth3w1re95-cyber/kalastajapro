@@ -47,13 +47,17 @@ export default function PrivacyScreen() {
           <Text style={styles.body}>
             Sää haetaan Open-Meteo-palvelusta. Sovellus lähettää palveluun säähaun
             koordinaatit ja vastaanottaa säätiedot. Open-Meteo ei vaadi tähän sovellukseen
-            henkilökohtaista API-avainta.
+            henkilökohtaista API-avainta. Viimeisin onnistunut vastaus tallennetaan
+            laitteen omaan tallennustilaan, jotta se voidaan näyttää verkkoyhteyden
+            katketessa. Välimuistissa näkyy aina alkuperäinen päivitysaika.
           </Text>
         </InfoCard>
 
         <InfoCard title="Saalit, paikat ja kuvat">
           <Text style={styles.body}>
             Saaliit ja kalastuspaikat tallennetaan puhelimen paikalliseen SQLite-tietokantaan.
+            Saaliiseen voidaan tallentaa myös valitun kalastuspaikan koordinaatit, jotta
+            saalis voidaan avata kartalla.
             Valitut saaliskuvat kopioidaan sovelluksen omaan tallennustilaan. Niitä ei
             lähetetä Kalastuspro-sovelluksen omalle palvelimelle.
           </Text>

@@ -1,3 +1,5 @@
+import * as FileSystem from 'expo-file-system/legacy';
+
 export type WeatherData = {
   temperature: number;
   pressure: number;
@@ -6,6 +8,10 @@ export type WeatherData = {
   weatherCode: number;
   locationName: string;
   pressureHistory: PressurePoint[];
+  forecast: ForecastPoint[];
+  sunrise: string | null;
+  sunset: string | null;
+  fetchedAt: string;
 };
 
 export type PressurePoint = {
@@ -17,6 +23,21 @@ export type FeedingIndex = {
   score: number;
   label: string;
   explanation: string;
+  factors: FeedingFactor[];
+};
+
+export type FeedingFactor = {
+  label: string;
+  points: number;
+  explanation: string;
+};
+
+export type ForecastPoint = {
+  time: string;
+  temperature: number;
+  windSpeed: number;
+  precipitation: number;
+  weatherCode: number;
 };
 
 type OpenMeteoResponse = {
@@ -31,6 +52,14 @@ type OpenMeteoResponse = {
   hourly?: {
     time?: string[];
     surface_pressure?: number[];
+    temperature_2m?: number[];
+    wind_speed_10m?: number[];
+    precipitation?: number[];
+    weather_code?: number[];
+  };
+  daily?: {
+    sunrise?: string[];
+    sunset?: string[];
   };
 };
 
@@ -46,11 +75,13 @@ export async function fetchWeather(
     longitude: longitude.toString(),
     current:
       'temperature_2m,surface_pressure,wind_speed_10m,wind_direction_10m,weather_code',
-    hourly: 'surface_pressure',
+    hourly: 'surface_pressure,temperature_2m,wind_speed_10m,precipitation,weather_code',
+    daily: 'sunrise,sunset',
     temperature_unit: 'celsius',
     wind_speed_unit: 'kmh',
+    timezone: 'auto',
     past_days: '1',
-    forecast_days: '1',
+    forecast_days: '2',
   });
 
   const response = await fetch(`${OPEN_METEO_URL}?${params.toString()}`);
@@ -82,6 +113,23 @@ export async function fetchWeather(
     throw new Error('Ilmanpaineen tuntihistoriaa ei saatu sääpalvelusta.');
   }
 
+  const hourlyTemperatures = data.hourly?.temperature_2m;
+  const hourlyWindSpeeds = data.hourly?.wind_speed_10m;
+  const hourlyPrecipitation = data.hourly?.precipitation;
+  const hourlyWeatherCodes = data.hourly?.weather_code;
+  if (
+    hourlyTemperatures === undefined ||
+    hourlyWindSpeeds === undefined ||
+    hourlyPrecipitation === undefined ||
+    hourlyWeatherCodes === undefined ||
+    hourlyTemperatures.length !== hourlyTimes.length ||
+    hourlyWindSpeeds.length !== hourlyTimes.length ||
+    hourlyPrecipitation.length !== hourlyTimes.length ||
+    hourlyWeatherCodes.length !== hourlyTimes.length
+  ) {
+    throw new Error('Sääennusteen tuntitietoja ei saatu sääpalvelusta.');
+  }
+
   const pressureHistory = hourlyTimes
     .map((time, index) => ({ time, pressure: hourlyPressures[index] }))
     .filter(
@@ -94,6 +142,17 @@ export async function fetchWeather(
     throw new Error('Ilmanpaineen tuntihistoriassa ei ole tarpeeksi tietoja.');
   }
 
+  const forecast = hourlyTimes
+    .map((time, index) => ({
+      time,
+      temperature: hourlyTemperatures[index],
+      windSpeed: hourlyWindSpeeds[index],
+      precipitation: hourlyPrecipitation[index],
+      weatherCode: hourlyWeatherCodes[index],
+    }))
+    .filter((point) => point.time >= current.time!)
+    .slice(0, 48);
+
   return {
     temperature: current.temperature_2m,
     pressure: current.surface_pressure,
@@ -102,7 +161,37 @@ export async function fetchWeather(
     weatherCode: current.weather_code,
     locationName,
     pressureHistory,
+    forecast,
+    sunrise: data.daily?.sunrise?.[0] ?? null,
+    sunset: data.daily?.sunset?.[0] ?? null,
+    fetchedAt: new Date().toISOString(),
   };
+}
+
+const WEATHER_CACHE_URI = `${FileSystem.documentDirectory ?? ''}weather-cache.json`;
+
+export async function fetchWeatherWithCache(
+  latitude: number,
+  longitude: number,
+  locationName: string
+): Promise<{ weather: WeatherData; isCached: boolean }> {
+  try {
+    const weather = await fetchWeather(latitude, longitude, locationName);
+    if (FileSystem.documentDirectory) {
+      await FileSystem.writeAsStringAsync(WEATHER_CACHE_URI, JSON.stringify(weather));
+    }
+    return { weather, isCached: false };
+  } catch (error) {
+    if (!FileSystem.documentDirectory) {
+      throw error;
+    }
+    const cacheInfo = await FileSystem.getInfoAsync(WEATHER_CACHE_URI);
+    if (!cacheInfo.exists) {
+      throw error;
+    }
+    const cached = JSON.parse(await FileSystem.readAsStringAsync(WEATHER_CACHE_URI)) as WeatherData;
+    return { weather: cached, isCached: true };
+  }
 }
 
 export function getWeatherDescription(weatherCode: number): string {
@@ -127,22 +216,51 @@ export function getWindDirection(direction: number): string {
 export function calculateFeedingIndex(weather: WeatherData): FeedingIndex {
   const pressures = weather.pressureHistory.map((point) => point.pressure);
   const pressureChange = pressures[pressures.length - 1] - pressures[0];
+  const factors: FeedingFactor[] = [];
   let score = 50;
 
-  if (weather.temperature >= 8 && weather.temperature <= 22) score += 12;
-  else if (weather.temperature < 0 || weather.temperature > 28) score -= 10;
+  if (weather.temperature >= 8 && weather.temperature <= 22) {
+    score += 12;
+    factors.push({ label: 'Lämpötila', points: 12, explanation: 'Lämpötila on kalastukseen sopivalla alueella.' });
+  } else if (weather.temperature < 0 || weather.temperature > 28) {
+    score -= 10;
+    factors.push({ label: 'Lämpötila', points: -10, explanation: 'Lämpötila on haastava.' });
+  } else {
+    factors.push({ label: 'Lämpötila', points: 0, explanation: 'Lämpötila on kohtuullinen.' });
+  }
 
-  if (Math.abs(pressureChange) <= 2) score += 8;
-  else if (pressureChange < -2 && pressureChange >= -8) score += 15;
-  else if (pressureChange > 6 || pressureChange < -10) score -= 8;
+  if (Math.abs(pressureChange) <= 2) {
+    score += 8;
+    factors.push({ label: 'Ilmanpaine', points: 8, explanation: 'Paine on melko vakaa.' });
+  } else if (pressureChange < -2 && pressureChange >= -8) {
+    score += 15;
+    factors.push({ label: 'Ilmanpaine', points: 15, explanation: 'Laskeva paine voi aktivoida kalaa.' });
+  } else if (pressureChange > 6 || pressureChange < -10) {
+    score -= 8;
+    factors.push({ label: 'Ilmanpaine', points: -8, explanation: 'Paineen muutos on haastava.' });
+  } else {
+    factors.push({ label: 'Ilmanpaine', points: 0, explanation: 'Paineen muutos on maltillinen.' });
+  }
 
-  if (weather.windSpeed >= 5 && weather.windSpeed <= 20) score += 8;
-  else if (weather.windSpeed > 30) score -= 12;
+  if (weather.windSpeed >= 5 && weather.windSpeed <= 20) {
+    score += 8;
+    factors.push({ label: 'Tuuli', points: 8, explanation: 'Tuulen nopeus on sopiva.' });
+  } else if (weather.windSpeed > 30) {
+    score -= 12;
+    factors.push({ label: 'Tuuli', points: -12, explanation: 'Tuuli on voimakas.' });
+  } else {
+    factors.push({ label: 'Tuuli', points: 0, explanation: 'Tuuli on heikko.' });
+  }
 
   if ([0, 1, 2, 3, 51, 53, 61, 63, 80, 81].includes(weather.weatherCode)) {
     score += 5;
+    factors.push({ label: 'Säätila', points: 5, explanation: 'Säätila voi olla kalastukseen suotuisa.' });
+  } else if ([71, 73, 75, 95, 96, 99].includes(weather.weatherCode)) {
+    score -= 6;
+    factors.push({ label: 'Säätila', points: -6, explanation: 'Säätila on haastava.' });
+  } else {
+    factors.push({ label: 'Säätila', points: 0, explanation: 'Säätila on neutraali.' });
   }
-  if ([71, 73, 75, 95, 96, 99].includes(weather.weatherCode)) score -= 6;
 
   const boundedScore = Math.max(0, Math.min(100, Math.round(score)));
   const label =
@@ -154,5 +272,5 @@ export function calculateFeedingIndex(weather: WeatherData): FeedingIndex {
         ? 'Paine on pysynyt melko vakaana.'
         : 'Paine on noussut, joten kala voi olla varovaisempi.';
 
-  return { score: boundedScore, label, explanation };
+  return { score: boundedScore, label, explanation, factors };
 }

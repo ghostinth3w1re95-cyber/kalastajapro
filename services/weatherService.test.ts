@@ -17,6 +17,10 @@ function weather(overrides: Partial<WeatherData> = {}): WeatherData {
       { time: '2026-10-21T10:00', pressure: 1015 },
       { time: '2026-10-22T10:00', pressure: 1010 },
     ],
+    forecast: [],
+    sunrise: null,
+    sunset: null,
+    fetchedAt: '2026-10-22T10:00:00.000Z',
     ...overrides,
   };
 }
@@ -40,6 +44,12 @@ describe('weather helpers', () => {
     expect(result.score).toBe(90);
     expect(result.label).toBe('Hyvät olosuhteet');
     expect(result.explanation).toContain('laskenut');
+    expect(result.factors.map((factor) => factor.label)).toEqual([
+      'Lämpötila',
+      'Ilmanpaine',
+      'Tuuli',
+      'Säätila',
+    ]);
   });
 
   it('reduces the score for extreme conditions', () => {

@@ -10,6 +10,7 @@ import {
   View as RNView,
 } from 'react-native';
 import * as Location from 'expo-location';
+import { useLocalSearchParams } from 'expo-router';
 import MapView, { Marker, type MapPressEvent, type Region } from 'react-native-maps';
 
 import { Text, View } from '@/components/Themed';
@@ -27,6 +28,7 @@ const DEFAULT_REGION: Region = {
 };
 
 export default function TabTwoScreen() {
+  const params = useLocalSearchParams<{ latitude?: string; longitude?: string }>();
   const [region, setRegion] = useState<Region>(DEFAULT_REGION);
   const [locationStatus, setLocationStatus] = useState<
     'loading' | 'granted' | 'denied'
@@ -39,6 +41,14 @@ export default function TabTwoScreen() {
   const [spotName, setSpotName] = useState('');
 
   useEffect(() => {
+    const latitude = Number(params.latitude);
+    const longitude = Number(params.longitude);
+    if (Number.isFinite(latitude) && Number.isFinite(longitude)) {
+      // Route parameters are external input that must synchronize the map view.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
+      setRegion((current) => ({ ...current, latitude, longitude }));
+    }
+
     void getFishingSpots()
       .then(setSpots)
       .catch(() => {
@@ -64,7 +74,7 @@ export default function TabTwoScreen() {
     void requestLocation().catch(() => {
       setLocationStatus('denied');
     });
-  }, []);
+  }, [params.latitude, params.longitude]);
 
   function handleMapPress(event: MapPressEvent) {
     setPendingCoordinate(event.nativeEvent.coordinate);

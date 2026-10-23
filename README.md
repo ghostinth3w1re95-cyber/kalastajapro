@@ -68,6 +68,9 @@ npm run web
 - Jos lupa evätään tai sijaintia ei saada, käytetään Helsingin oletussijaintia.
 - Näytetään lämpötila, ilmanpaine, tuuli metreinä sekunnissa, tuulensuunta ja säätilanne.
 - Ilmanpaineen viimeisen 24 tunnin kehitys näytetään kuvaajana.
+- Seuraavien tuntien lämpötila-, tuuli- ja sademääräennuste sekä auringonnousu
+  ja -lasku näytetään sääsivulla.
+- Viimeisin onnistunut säävastaus tallennetaan paikallisesti verkkokatkoja varten.
 - Syönti-indeksi on suuntaa-antava heuristinen arvio, ei saalistakuu.
 
 ### Kartta
@@ -84,7 +87,9 @@ npm run web
 - Saaliita voi muokata ja poistaa.
 - Saaliskuva kopioidaan sovelluksen omaan tallennustilaan.
 - Tilastosivulla näytetään kokonaismäärä, painot, suurin saalis, yleisin laji sekä
-  laji- ja paikkakohtaiset määrät.
+  laji- ja paikkakohtaiset määrät sekä SVG-pylväskaavio.
+- Valitun kalastuspaikan koordinaatit tallennetaan saaliiseen ja saaliin voi avata
+  suoraan kartalla.
 
 ## Kansiorakenne
 
@@ -114,7 +119,8 @@ Saalit ja kalastuspaikat tallennetaan laitteen paikalliseen SQLite-tietokantaan.
 Kuvat tallennetaan laitteen sovellustilaan, ja tietoja ei lähetetä tämän projektin
 omalle palvelimelle.
 
-Sijaintia käytetään säähaun koordinaatteihin ja kartan käyttäjäsijaintiin.
+Sijaintia käytetään säähaun koordinaatteihin ja kartan käyttäjäsijaintiin. Valitun
+kalastuspaikan koordinaatit voidaan tallentaa saaliin yhteyteen kartalla avaamista varten.
 Open-Meteolle välitetään säähaun koordinaatit, jotta paikkakohtainen sää voidaan
 palauttaa. Sovellus ei käytä kameraa tai mikrofonia.
 
@@ -131,7 +137,7 @@ npm test
 TypeScript-tarkistus:
 
 ```powershell
-npx tsc --noEmit
+npm run typecheck
 ```
 
 Lint:
@@ -143,7 +149,7 @@ npm run lint
 Expo-konfiguraation tarkistus:
 
 ```powershell
-npx expo-doctor
+npm run doctor
 npx expo config --type public
 ```
 

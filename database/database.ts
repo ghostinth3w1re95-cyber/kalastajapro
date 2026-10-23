@@ -14,6 +14,8 @@ export type CatchRecord = {
   date: string;
   location: string;
   imageUri: string | null;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 type FishingSpotRow = {
@@ -30,6 +32,8 @@ type CatchRecordRow = {
   date: string;
   location: string;
   imageUri: string | null;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 let databasePromise: Promise<SQLite.SQLiteDatabase> | null = null;
@@ -59,6 +63,12 @@ async function getDatabase(): Promise<SQLite.SQLiteDatabase> {
       );
       if (!columns.some((column) => column.name === 'image_uri')) {
         await db.execAsync('ALTER TABLE catches ADD COLUMN image_uri TEXT');
+      }
+      if (!columns.some((column) => column.name === 'latitude')) {
+        await db.execAsync('ALTER TABLE catches ADD COLUMN latitude REAL');
+      }
+      if (!columns.some((column) => column.name === 'longitude')) {
+        await db.execAsync('ALTER TABLE catches ADD COLUMN longitude REAL');
       }
       return db;
     });
@@ -92,7 +102,7 @@ export async function addFishingSpot(
 export async function getCatchRecords(): Promise<CatchRecord[]> {
   const db = await getDatabase();
   const rows = await db.getAllAsync<CatchRecordRow>(
-    'SELECT id, species, weight, date, location, image_uri AS imageUri FROM catches ORDER BY date DESC, id DESC'
+    'SELECT id, species, weight, date, location, image_uri AS imageUri, latitude, longitude FROM catches ORDER BY date DESC, id DESC'
   );
   return rows;
 }
@@ -102,16 +112,20 @@ export async function addCatchRecord(
   weight: number,
   date: string,
   location: string,
-  imageUri: string | null
+  imageUri: string | null,
+  latitude: number | null,
+  longitude: number | null
 ): Promise<void> {
   const db = await getDatabase();
   await db.runAsync(
-    'INSERT INTO catches (species, weight, date, location, image_uri) VALUES (?, ?, ?, ?, ?)',
+    'INSERT INTO catches (species, weight, date, location, image_uri, latitude, longitude) VALUES (?, ?, ?, ?, ?, ?, ?)',
     species,
     weight,
     date,
     location,
-    imageUri
+    imageUri,
+    latitude,
+    longitude
   );
 }
 
@@ -121,16 +135,20 @@ export async function updateCatchRecord(
   weight: number,
   date: string,
   location: string,
-  imageUri: string | null
+  imageUri: string | null,
+  latitude: number | null,
+  longitude: number | null
 ): Promise<void> {
   const db = await getDatabase();
   await db.runAsync(
-    'UPDATE catches SET species = ?, weight = ?, date = ?, location = ?, image_uri = ? WHERE id = ?',
+    'UPDATE catches SET species = ?, weight = ?, date = ?, location = ?, image_uri = ?, latitude = ?, longitude = ? WHERE id = ?',
     species,
     weight,
     date,
     location,
     imageUri,
+    latitude,
+    longitude,
     id
   );
 }
