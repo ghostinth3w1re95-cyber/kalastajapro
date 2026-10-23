@@ -178,6 +178,8 @@ Suositeltu esittelyjärjestys:
 8. Avaa tietosuoja-näkymä.
 9. Käynnistä sovellus uudelleen ja osoita, että tiedot säilyvät.
 
+Yllä mainitut asiat ovat minun muistiinpanot
+
 ## Tunnetut rajoitukset
 
 - Open-Meteon sää riippuu verkkoyhteydestä.
